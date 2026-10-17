@@ -1,0 +1,18 @@
+# Private proposal, chapters, and local review notes
+/.resources/
+
+# Local credentials and machine-specific settings
+/.env
+/.env.*
+!/.env.example
+/config/local.php
+
+# Local database exports (keep the application schema)
+/backups/
+*.log
+
+# Editor and operating system files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,13 @@
+<?php
+// Copy this file to local.php on each machine.
+// local.php is ignored by Git so passwords stay off GitHub.
+
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'oxford_academy');
+define('DB_USER', 'oxford_user');
+define('DB_PASS', 'change-this-password');
+define('DB_CHARSET', 'utf8mb4');
+
+// XAMPP on Windows often uses:
+// define('DB_USER', 'root');
+// define('DB_PASS', '');
