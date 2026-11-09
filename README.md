@@ -4,17 +4,17 @@ Tuition Centre Management System for Oxford Academy, Nedunkerny, Vavuniya.
 
 The application uses PHP, PDO, MySQL, HTML, CSS, and JavaScript. There is no framework. Each page reads the form, checks the user’s role, validates the values, then saves with PDO.
 
-**Current status:** Login, students, subject enrollment, teachers, assignments, and attendance work. Fees, examinations, and full progress reports are not included yet.
+**Current status:** All core modules (Authentication, Students, Subject Enrollment, Teachers, Assignments, Attendance, Fees & Receipts, Examinations & Grading, Consolidated Progress Reports, and the Automated Test Suite) are fully implemented and verified.
 
 ## What works now
 
 | Role | Can do |
 | --- | --- |
-| Administrator | Create classes, subjects, students, and teachers. Enrol a student in selected subjects. Assign a teacher to a class and subject. View and correct attendance. |
-| Teacher | See only students in assigned subjects. Mark attendance once per date. |
-| Student | View own attendance. Change own password. |
+| Administrator | Create classes, subjects, students, and teachers. Enrol a student in selected subjects. Assign teachers. View and correct attendance. Configure class fee structures and record fee payments with receipts. Schedule examinations and view class result sheets. View consolidated student progress reports and manage user accounts. |
+| Teacher | See only students in assigned class/subject offerings. Mark attendance once per date. Enter examination marks for assigned subjects with automated grade determination. |
+| Student / Parent | View personal attendance rate, fee payment history & current month status, examination results, and printable consolidated progress report. Change own password. |
 
-A student who takes Mathematics is not listed in Science. A Mathematics teacher cannot open a Science list by changing the URL.
+A student who takes Mathematics is not listed in Science. A Mathematics teacher cannot open a Science list by changing the URL. Financial records are accessible only to administrators and individual students viewing their own records.
 
 ## Folder layout
 

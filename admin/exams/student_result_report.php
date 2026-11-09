@@ -23,11 +23,11 @@ $all_students = $pdo->query(
     "SELECT id, student_code, full_name FROM students WHERE is_active = 1 ORDER BY full_name"
 )->fetchAll();
 
-$student    = null;
-$results    = [];
+$student = null;
+$results = [];
 
 if ($selected_student_id > 0) {
-    $stu_stmt = $pdo->prepare("SELECT * FROM students WHERE id = :id");
+    $stu_stmt = $pdo->prepare("SELECT * FROM students WHERE id = :id AND is_active = 1");
     $stu_stmt->execute([':id' => $selected_student_id]);
     $student = $stu_stmt->fetch();
 
@@ -61,17 +61,21 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <h1 class="page-title">Student Result Report</h1>
 
+<div class="no-print" style="margin-bottom:16px;">
+    <a href="<?php echo BASE_URL; ?>/admin/exams/list_exams.php" class="btn btn-secondary">← Back to Examinations</a>
+</div>
+
 <!-- Student selector -->
 <div class="card no-print">
     <form method="GET" action="">
-        <div class="form-group">
+        <div class="form-group" style="margin:0;">
             <label for="student_id">Select Student</label>
             <select id="student_id" name="student_id" onchange="this.form.submit()">
                 <option value="0">— Select Student —</option>
                 <?php foreach ($all_students as $stu): ?>
-                    <option value="<?php echo $stu['id']; ?>"
-                        <?php echo ($selected_student_id === (int)$stu['id']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($stu['student_code'] . ' — ' . $stu['full_name']); ?>
+                    <option value="<?php echo (int) $stu['id']; ?>"
+                        <?php echo ($selected_student_id === (int) $stu['id']) ? 'selected' : ''; ?>>
+                        <?php echo h($stu['student_code'] . ' — ' . $stu['full_name']); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -85,8 +89,8 @@ require_once __DIR__ . '/../../includes/header.php';
 <div style="display:none;" class="print-header">
     <h2 style="text-align:center;">Oxford Academy — Student Exam Result Report</h2>
     <p style="text-align:center;">
-        <?php echo htmlspecialchars($student['full_name']); ?>
-        &nbsp;|&nbsp; <?php echo htmlspecialchars($student['student_code']); ?>
+        <?php echo h($student['full_name']); ?>
+        &nbsp;|&nbsp; <?php echo h($student['student_code']); ?>
         &nbsp;|&nbsp; Generated: <?php echo date('d M Y'); ?>
     </p>
     <hr>
@@ -97,9 +101,9 @@ require_once __DIR__ . '/../../includes/header.php';
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
         <div class="card-title" style="margin:0; border:none; padding:0;">
-            <?php echo htmlspecialchars($student['full_name']); ?>
+            <?php echo h($student['full_name']); ?>
             <span style="font-size:13px; font-weight:normal; color:#7f8c8d; margin-left:8px;">
-                (<?php echo htmlspecialchars($student['student_code']); ?>)
+                (<?php echo h($student['student_code']); ?>)
             </span>
         </div>
         <button id="print-btn" class="btn btn-print btn-sm no-print">Print</button>
@@ -159,12 +163,12 @@ require_once __DIR__ . '/../../includes/header.php';
                     ?>
                     <tr>
                         <td><?php echo $i + 1; ?></td>
-                        <td><?php echo htmlspecialchars($r['exam_name']); ?></td>
-                        <td><?php echo htmlspecialchars($r['grade_level'] . ' — ' . $r['class_name']); ?></td>
-                        <td><?php echo htmlspecialchars($r['subject_name']); ?></td>
+                        <td><?php echo h($r['exam_name']); ?></td>
+                        <td><?php echo h($r['grade_level'] . ' — ' . $r['class_name']); ?></td>
+                        <td><?php echo h($r['subject_name']); ?></td>
                         <td><?php echo date('d M Y', strtotime($r['exam_date'])); ?></td>
                         <td style="text-align:center;">
-                            <?php echo $r['marks_obtained']; ?> / <?php echo $r['total_marks']; ?>
+                            <?php echo $r['marks_obtained']; ?> / <?php echo (int) $r['total_marks']; ?>
                         </td>
                         <td style="text-align:center;">
                             <!-- Colour-code: green ≥75%, orange ≥50%, red <50% -->
@@ -173,7 +177,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             </span>
                         </td>
                         <td style="text-align:center;">
-                            <strong style="font-size:16px;"><?php echo htmlspecialchars($r['grade']); ?></strong>
+                            <strong style="font-size:16px;"><?php echo h($r['grade']); ?></strong>
                         </td>
                     </tr>
                     <?php endforeach; ?>

@@ -36,16 +36,23 @@ if (!isset($page_title)) {
                 <a href="<?php echo BASE_URL; ?>/admin/classes/list_classes.php">Classes</a>
                 <a href="<?php echo BASE_URL; ?>/admin/subjects/list_subjects.php">Subjects</a>
                 <a href="<?php echo BASE_URL; ?>/admin/attendance/view_by_class.php">Attendance</a>
+                <a href="<?php echo BASE_URL; ?>/admin/fees/set_fee_structure.php">Fees</a>
+                <a href="<?php echo BASE_URL; ?>/admin/exams/list_exams.php">Exams</a>
+                <a href="<?php echo BASE_URL; ?>/admin/reports/student_progress.php">Reports</a>
                 <a href="<?php echo BASE_URL; ?>/admin/manage_users.php">Accounts</a>
 
             <?php elseif ($_SESSION['role'] === 'teacher'): ?>
                 <a href="<?php echo BASE_URL; ?>/teacher/dashboard.php">Dashboard</a>
                 <a href="<?php echo BASE_URL; ?>/teacher/attendance/mark_attendance.php">Mark Attendance</a>
+                <a href="<?php echo BASE_URL; ?>/teacher/results/enter_marks.php">Enter Marks</a>
                 <a href="<?php echo BASE_URL; ?>/teacher/my_students.php">My Students</a>
 
             <?php elseif ($_SESSION['role'] === 'student'): ?>
                 <a href="<?php echo BASE_URL; ?>/student/dashboard.php">Dashboard</a>
                 <a href="<?php echo BASE_URL; ?>/student/attendance.php">My Attendance</a>
+                <a href="<?php echo BASE_URL; ?>/student/fees.php">My Fees</a>
+                <a href="<?php echo BASE_URL; ?>/student/results.php">My Results</a>
+                <a href="<?php echo BASE_URL; ?>/student/progress_report.php">Progress Report</a>
             <?php endif; ?>
         </nav>
 

@@ -25,6 +25,19 @@ $count_stmt = $pdo->prepare(
 $count_stmt->execute([':teacher_id' => $teacher_id]);
 $total_students = (int) $count_stmt->fetchColumn();
 
+// Count exams scheduled for this teacher's assigned classes & subjects
+$exam_count_stmt = $pdo->prepare(
+    "SELECT COUNT(*)
+     FROM examinations e
+     JOIN teacher_assignments ta
+         ON ta.class_id = e.class_id
+        AND ta.subject_id = e.subject_id
+        AND ta.teacher_id = :teacher_id
+        AND ta.ends_on IS NULL"
+);
+$exam_count_stmt->execute([':teacher_id' => $teacher_id]);
+$total_exams = (int) $exam_count_stmt->fetchColumn();
+
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -39,6 +52,10 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="summary-number"><?php echo $total_students; ?></div>
         <div class="summary-label">Students in those subjects</div>
     </div>
+    <div class="summary-box purple">
+        <div class="summary-number"><?php echo $total_exams; ?></div>
+        <div class="summary-label">Examinations</div>
+    </div>
 </div>
 
 <div class="card">
@@ -46,6 +63,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
         <a href="<?php echo BASE_URL; ?>/teacher/my_students.php" class="btn btn-primary">View My Students</a>
         <a href="<?php echo BASE_URL; ?>/teacher/attendance/mark_attendance.php" class="btn btn-secondary">Mark Attendance</a>
+        <a href="<?php echo BASE_URL; ?>/teacher/results/enter_marks.php" class="btn btn-secondary">Enter Exam Marks</a>
     </div>
 </div>
 

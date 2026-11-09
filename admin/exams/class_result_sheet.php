@@ -3,6 +3,7 @@
 // admin/exams/class_result_sheet.php — Class-wise result sheet
 //
 // Shows every student's result for one examination.
+// Only students enrolled in that specific subject are listed.
 // Also calculates and displays class statistics:
 //   highest mark, lowest mark, class average, and pass count.
 // Printable.
@@ -44,8 +45,8 @@ if ($selected_exam_id > 0) {
     $exam_info = $ex_stmt->fetch();
 
     if ($exam_info) {
-        // Fetch all enrolled students and LEFT JOIN their results.
-        // Students with no result appear as NULL marks.
+        // Fetch all students enrolled in the specific subject (student_subjects),
+        // then LEFT JOIN their results. Students with no result appear as NULL marks.
         $res_stmt = $pdo->prepare(
             "SELECT
                 s.id          AS student_id,
@@ -55,16 +56,21 @@ if ($selected_exam_id > 0) {
                 r.grade,
                 r.entered_at
              FROM students s
-             JOIN student_classes sc ON sc.student_id = s.id
-                                    AND sc.class_id    = :class_id
-             LEFT JOIN results r ON r.student_id    = s.id
-                                AND r.examination_id = :exam_id
+             JOIN student_subjects ss
+                 ON ss.student_id = s.id
+                 AND ss.class_id   = :class_id
+                 AND ss.subject_id = :subject_id
+                 AND (ss.ends_on IS NULL OR ss.ends_on >= CURDATE())
+             LEFT JOIN results r
+                 ON r.student_id    = s.id
+                 AND r.examination_id = :exam_id
              WHERE s.is_active = 1
              ORDER BY r.marks_obtained DESC, s.full_name ASC"
         );
         $res_stmt->execute([
-            ':class_id' => $exam_info['class_id'],
-            ':exam_id'  => $selected_exam_id,
+            ':class_id'   => $exam_info['class_id'],
+            ':subject_id' => $exam_info['subject_id'],
+            ':exam_id'    => $selected_exam_id,
         ]);
         $results_data = $res_stmt->fetchAll();
 
@@ -75,14 +81,14 @@ if ($selected_exam_id > 0) {
         );
 
         if (!empty($marks_list)) {
-            $total_marks   = $exam_info['total_marks'];
+            $total_marks    = (float) $exam_info['total_marks'];
             $pass_threshold = 40; // percentage to pass
 
             $stats = [
                 'highest'    => max($marks_list),
                 'lowest'     => min($marks_list),
                 'average'    => round(array_sum($marks_list) / count($marks_list), 1),
-                'pass_count' => count(array_filter($marks_list, fn($m) => ($m / $total_marks * 100) >= $pass_threshold)),
+                'pass_count' => count(array_filter($marks_list, fn($m) => (($m / $total_marks) * 100) >= $pass_threshold)),
                 'entered'    => count($marks_list),
                 'total'      => count($results_data),
             ];
@@ -95,17 +101,21 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <h1 class="page-title">Class Result Sheet</h1>
 
+<div class="no-print" style="margin-bottom:16px;">
+    <a href="<?php echo BASE_URL; ?>/admin/exams/list_exams.php" class="btn btn-secondary">← Back to Examinations</a>
+</div>
+
 <!-- Exam selector -->
 <div class="card no-print">
     <form method="GET" action="">
-        <div class="form-group">
+        <div class="form-group" style="margin:0;">
             <label for="exam_id">Select Examination</label>
             <select id="exam_id" name="exam_id" onchange="this.form.submit()">
                 <option value="0">— Select Exam —</option>
                 <?php foreach ($all_exams as $ex): ?>
-                    <option value="<?php echo $ex['id']; ?>"
-                        <?php echo ($selected_exam_id === (int)$ex['id']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars(
+                    <option value="<?php echo (int) $ex['id']; ?>"
+                        <?php echo ($selected_exam_id === (int) $ex['id']) ? 'selected' : ''; ?>>
+                        <?php echo h(
                             $ex['exam_name'] . ' | '
                             . $ex['grade_level'] . ' ' . $ex['class_name'] . ' | '
                             . $ex['subject_name'] . ' | '
@@ -124,9 +134,9 @@ require_once __DIR__ . '/../../includes/header.php';
 <div style="display:none;" class="print-header">
     <h2 style="text-align:center;">Oxford Academy — Examination Result Sheet</h2>
     <p style="text-align:center;">
-        <?php echo htmlspecialchars($exam_info['exam_name']); ?>
-        &nbsp;|&nbsp; <?php echo htmlspecialchars($exam_info['grade_level'] . ' — ' . $exam_info['class_name']); ?>
-        &nbsp;|&nbsp; <?php echo htmlspecialchars($exam_info['subject_name']); ?>
+        <?php echo h($exam_info['exam_name']); ?>
+        &nbsp;|&nbsp; <?php echo h($exam_info['grade_level'] . ' — ' . $exam_info['class_name']); ?>
+        &nbsp;|&nbsp; <?php echo h($exam_info['subject_name']); ?>
         &nbsp;|&nbsp; <?php echo date('d M Y', strtotime($exam_info['exam_date'])); ?>
     </p>
 </div>
@@ -148,8 +158,8 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="summary-label">Class Average</div>
     </div>
     <div class="summary-box green">
-        <div class="summary-number"><?php echo $stats['pass_count']; ?>/<?php echo $stats['entered']; ?></div>
-        <div class="summary-label">Passed (≥40%)</div>
+        <div class="summary-number"><?php echo $stats['pass_count']; ?> / <?php echo $stats['entered']; ?></div>
+        <div class="summary-label">Passed (&ge;40%)</div>
     </div>
 </div>
 <?php endif; ?>
@@ -157,14 +167,17 @@ require_once __DIR__ . '/../../includes/header.php';
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="card-title" style="margin:0; border:none; padding:0;">
-            <?php echo htmlspecialchars($exam_info['exam_name']); ?>
-            — <?php echo htmlspecialchars($exam_info['subject_name']); ?>
+            <?php echo h($exam_info['exam_name']); ?>
+            — <?php echo h($exam_info['subject_name']); ?>
             — <?php echo date('d M Y', strtotime($exam_info['exam_date'])); ?>
-            (Out of <?php echo $exam_info['total_marks']; ?>)
+            (Out of <?php echo (int) $exam_info['total_marks']; ?>)
         </div>
         <button id="print-btn" class="btn btn-print btn-sm no-print">Print</button>
     </div>
 
+    <?php if (empty($results_data)): ?>
+        <p style="color:#7f8c8d;">No active students are enrolled in this subject offering.</p>
+    <?php else: ?>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -185,11 +198,11 @@ require_once __DIR__ . '/../../includes/header.php';
                 ?>
                 <tr>
                     <td><?php echo $i + 1; ?></td>
-                    <td><span style="font-family:monospace;"><?php echo htmlspecialchars($row['student_code']); ?></span></td>
-                    <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+                    <td><span style="font-family:monospace;"><?php echo h($row['student_code']); ?></span></td>
+                    <td><?php echo h($row['full_name']); ?></td>
                     <td style="text-align:center;">
                         <?php echo $row['marks_obtained'] !== null
-                            ? $row['marks_obtained'] . ' / ' . $exam_info['total_marks']
+                            ? $row['marks_obtained'] . ' / ' . (int) $exam_info['total_marks']
                             : '<span style="color:#7f8c8d;">Not entered</span>'; ?>
                     </td>
                     <td style="text-align:center;">
@@ -197,7 +210,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     </td>
                     <td style="text-align:center;">
                         <?php if ($row['grade']): ?>
-                            <strong style="font-size:16px;"><?php echo htmlspecialchars($row['grade']); ?></strong>
+                            <strong style="font-size:16px;"><?php echo h($row['grade']); ?></strong>
                         <?php else: ?>
                             <span style="color:#7f8c8d;">—</span>
                         <?php endif; ?>
@@ -210,14 +223,15 @@ require_once __DIR__ . '/../../includes/header.php';
                 <tr style="background:#f0f2f5;">
                     <td colspan="3" style="text-align:right; font-weight:bold; padding:10px 14px;">Class Average</td>
                     <td colspan="3" style="text-align:center; font-weight:bold; padding:10px 14px;">
-                        <?php echo $stats['average']; ?> / <?php echo $exam_info['total_marks']; ?>
-                        &nbsp;(<?php echo round($stats['average'] / $exam_info['total_marks'] * 100, 1); ?>%)
+                        <?php echo $stats['average']; ?> / <?php echo (int) $exam_info['total_marks']; ?>
+                        &nbsp;(<?php echo round(($stats['average'] / $exam_info['total_marks']) * 100, 1); ?>%)
                     </td>
                 </tr>
             </tfoot>
             <?php endif; ?>
         </table>
     </div>
+    <?php endif; ?>
 </div>
 
 <?php endif; ?>

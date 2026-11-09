@@ -4,6 +4,9 @@
 //
 // A read-only page. The student (or parent) sees all their
 // exam results grouped by subject, plus overall statistics.
+//
+// Record isolation: student_id is taken from the session, not
+// from the URL, so a student cannot view another student's results.
 // ============================================================
 
 require_once __DIR__ . '/../config/db.php';
@@ -13,7 +16,7 @@ require_once __DIR__ . '/../includes/auth_check.php';
 
 $pdo        = get_db_connection();
 $page_title = 'My Exam Results';
-$student_id = $_SESSION['linked_id'];
+$student_id = (int) $_SESSION['linked_id'];
 
 // Load student name
 $stu_stmt = $pdo->prepare("SELECT full_name, student_code FROM students WHERE id = :id");
@@ -48,11 +51,11 @@ foreach ($all_results as $r) {
 }
 
 // Overall stats
-$total_exams   = count($all_results);
-$overall_avg   = 0;
+$total_exams = count($all_results);
+$overall_avg = 0;
 if ($total_exams > 0) {
     $sum_pct = array_reduce($all_results, function ($carry, $r) {
-        return $carry + ($r['marks_obtained'] / $r['total_marks'] * 100);
+        return $carry + (($r['marks_obtained'] / $r['total_marks']) * 100);
     }, 0);
     $overall_avg = round($sum_pct / $total_exams, 1);
 }
@@ -89,7 +92,7 @@ require_once __DIR__ . '/../includes/header.php';
 <!-- Results grouped by subject -->
 <?php foreach ($by_subject as $subject_name => $rows): ?>
 <div class="card">
-    <div class="card-title"><?php echo htmlspecialchars($subject_name); ?></div>
+    <div class="card-title"><?php echo h($subject_name); ?></div>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -109,17 +112,17 @@ require_once __DIR__ . '/../includes/header.php';
                 ?>
                 <tr>
                     <td><?php echo $i + 1; ?></td>
-                    <td><?php echo htmlspecialchars($r['exam_name']); ?></td>
-                    <td><?php echo htmlspecialchars($r['grade_level'] . ' — ' . $r['class_name']); ?></td>
+                    <td><?php echo h($r['exam_name']); ?></td>
+                    <td><?php echo h($r['grade_level'] . ' — ' . $r['class_name']); ?></td>
                     <td><?php echo date('d M Y', strtotime($r['exam_date'])); ?></td>
-                    <td style="text-align:center;"><?php echo $r['marks_obtained']; ?> / <?php echo $r['total_marks']; ?></td>
+                    <td style="text-align:center;"><?php echo $r['marks_obtained']; ?> / <?php echo (int) $r['total_marks']; ?></td>
                     <td style="text-align:center;">
                         <span style="color:<?php echo $pct >= 75 ? '#27ae60' : ($pct >= 50 ? '#e67e22' : '#e74c3c'); ?>; font-weight:bold;">
                             <?php echo $pct; ?>%
                         </span>
                     </td>
                     <td style="text-align:center;">
-                        <strong style="font-size:16px;"><?php echo htmlspecialchars($r['grade']); ?></strong>
+                        <strong style="font-size:16px;"><?php echo h($r['grade']); ?></strong>
                     </td>
                 </tr>
                 <?php endforeach; ?>

@@ -23,27 +23,36 @@ $msg_type   = '';
 
 // Handle form submission — admin sets a new fee for a class
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['class_id'])) {
+    // CSRF check: reject forged form submissions
+    if (!csrf_ok()) {
+        $message  = 'The form expired. Please try again.';
+        $msg_type = 'error';
+    } else {
     $class_id  = (int)   $_POST['class_id'];
     $amount    = trim($_POST['monthly_amount'] ?? '');
 
     if (empty($amount) || !is_numeric($amount) || (float)$amount <= 0) {
-        $message  = 'Please enter a valid fee amount greater than zero.';
-        $msg_type = 'error';
-    } else {
-        // Insert a new fee record with today's date as effective_from.
-        // This records the change history without deleting the old rate.
-        $stmt = $pdo->prepare(
-            "INSERT INTO fee_structures (class_id, monthly_amount, effective_from)
-             VALUES (:class_id, :amount, CURDATE())"
-        );
-        $stmt->execute([
-            ':class_id' => $class_id,
-            ':amount'   => (float) $amount,
-        ]);
+            $message  = 'Please enter a valid fee amount greater than zero.';
+            $msg_type = 'error';
+        } elseif ($class_id <= 0) {
+            $message  = 'Invalid class. Please try again.';
+            $msg_type = 'error';
+        } else {
+            // Insert a new fee record with today's date as effective_from.
+            // This records the change history without deleting the old rate.
+            $stmt = $pdo->prepare(
+                "INSERT INTO fee_structures (class_id, monthly_amount, effective_from)
+                 VALUES (:class_id, :amount, CURDATE())"
+            );
+            $stmt->execute([
+                ':class_id' => $class_id,
+                ':amount'   => (float) $amount,
+            ]);
 
-        $message  = 'Fee updated successfully.';
-        $msg_type = 'success';
-    }
+            $message  = 'Fee updated successfully.';
+            $msg_type = 'success';
+        }
+    } // end csrf_ok
 }
 
 // Fetch all active classes with their current (latest) fee.
@@ -126,6 +135,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <td>
                         <!-- Inline form to update the fee for this class -->
                         <form method="POST" action="" style="display:flex; gap:6px; align-items:center;">
+                            <?php csrf_field(); ?>
                             <input type="hidden" name="class_id" value="<?php echo $cls['id']; ?>">
                             <input
                                 type="number"
